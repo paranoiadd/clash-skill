@@ -30,31 +30,49 @@ AI 助手帮你 `git clone`、`pip install`、拉模型权重时，经常卡死�
 - [Clash for Windows](https://github.com/Fndroid/clash_for_windows_pkg)，已导入订阅
 - 订阅需**带分流规则**（`GEOIP,CN,DIRECT` + `MATCH,节点`），否则 `rule` 模式无意义
 
-**一行安装**
+**一行安装（推荐）**
+
+```bash
+npx skills add paranoiadd/clash-skill          # 当前项目
+npx skills add paranoiadd/clash-skill -g       # 全局，所有项目可用
+```
+
+走 [vercel-labs/skills](https://github.com/vercel-labs/skills) 生态，Claude Code / Cursor / Codex / OpenCode 等通用。
+
+**备选：自带安装器**
 
 ```bash
 npx github:paranoiadd/clash-skill
 ```
 
-安装器会自动探测本机 Clash（可执行路径、混合端口、API secret），生成 `clash-config.json`，
-并装进检测到的 skills 目录（`~/.workbuddy/skills`、`~/.claude/skills`）。
+会探测本机 Clash 并写出 `clash-config.json`，同时装进检测到的 skills 目录
+（`~/.workbuddy/skills`、`~/.claude/skills`）。
 
 ```bash
 npx github:paranoiadd/clash-skill --dir ~/.workbuddy/skills   # 指定目录
 npx github:paranoiadd/clash-skill --force                     # 覆盖已有配置
 ```
 
+**零配置**
+
+不需要手填 secret。脚本运行时会自己找：
+
+| 需要的值 | 来源 |
+| --- | --- |
+| `ApiSecret` / 控制端口 / 混合端口 | `~/.config/clash/config.yaml`（Clash 每次启动都会写） |
+| `Clash for Windows.exe` | 运行中的进程 → 卸载注册表 `InstallLocation` → 常见安装目录 |
+
+想固定某些值再手写 `clash-config.json`（字段见 `clash-config.example.json`），
+它会覆盖自动探测结果。
+
 **手动安装**（没有 node 时）
 
 ```bash
 git clone https://github.com/paranoiadd/clash-skill
 cp -r clash-skill ~/.workbuddy/skills/clash
-cd ~/.workbuddy/skills/clash
-cp clash-config.example.json clash-config.json   # 填入 GuiExe 与 ApiSecret
 ```
 
-secret 在 `~/.config/clash/config.yaml` 的 `secret:` 字段。控制端口每次启动都会变，
-但脚本会自动重读该文件，不用你管。
+控制端口每次启动都会变，脚本会自动重读 `config.yaml`，不用你管。
 
 ## 命令
 

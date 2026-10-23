@@ -3,7 +3,7 @@ name: clash
 description: "Control the local Clash for Windows proxy so that only traffic which needs it goes through a node. Covers: starting/stopping Clash, switching to split-routing (rule) mode, toggling the Windows system proxy for GUI apps, running a single command through the proxy, checking/choosing nodes, and diagnosing why a given site fails. Use whenever downloading overseas resources, opening foreign sites, or when a command times out against GitHub / raw.githubusercontent / npm / pip / docker / huggingface / google / youtube."
 description_zh: "按需使用本机 Clash 代理：只让需要的程序走节点，国内流量保持直连。支持启停、分流模式、系统代理、单命令注入、节点切换与故障诊断"
 description_en: "Route only the traffic that needs a proxy through local Clash, keep domestic traffic direct"
-version: 2.1.0
+version: 2.2.0
 display_name: "clash"
 display_name_en: "clash"
 visibility: "public"
@@ -28,12 +28,14 @@ visibility: "public"
 
 | 项 | 值 |
 |---|---|
-| GUI 路径 | `clash-config.json` → `GuiExe` |
+| GUI 路径 | 自动探测（进程 → 卸载注册表 → 常见目录），`clash-config.json` → `GuiExe` 可覆盖 |
 | 进程名 | `Clash for Windows`（GUI）／ `clash-win64`（核心），配置可改 |
 | 混合端口 | 自动读 `~/.config/clash/config.yaml`（通常 `7890`） |
 | 控制 API | 同上；端口每次启动都变，由脚本自动处理 |
 
-本机参数全部在 `clash-config.json`。secret 属于本机凭据，不要外传。
+**零配置**：`clash-config.json` 是可选的。缺省时脚本自己从 `~/.config/clash/config.yaml`
+读 secret 与端口、自己找 `Clash for Windows.exe`，`status` 的 `config_source` 会说明当前来源
+（`auto-detected` / `clash-config.json`）。有该文件时只覆盖其中填了值的字段，secret 不要外传。
 
 ## 三种让程序用上代理的方式
 
@@ -47,7 +49,11 @@ visibility: "public"
 
 ## 动作
 
-脚本：`C:\Users\ldh\.workbuddy\skills\clash\scripts\clashctl.ps1`
+脚本：本 skill 目录下的 `scripts/clashctl.ps1`，下文记作 `$s`：
+
+```powershell
+$s = '<本 SKILL.md 所在目录>/scripts/clashctl.ps1'
+```
 
 ```powershell
 & $s status                        # 进程/API/mode/系统代理/节点

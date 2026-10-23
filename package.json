@@ -1,6 +1,6 @@
 {
   "name": "clash-skill",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Clash for Windows skill for AI assistants: route only the traffic that needs a proxy, keep domestic traffic direct.",
   "bin": {
     "clash-skill": "bin/install.js"

@@ -57,16 +57,87 @@ try {
 
 # ============================================================================
 # Local Clash environment
-# Loaded from ../clash-config.json (read as UTF-8 so non-ASCII paths survive on
-# Windows PowerShell 5.1, which would otherwise decode them as ANSI/GBK).
-# The in-code values below are ASCII-only fallbacks.
+#
+# Resolution order:
+#   1. Auto-detect everything from the machine (works with zero setup, which is
+#      what "npx skills add <repo>" users get - the JSON is gitignored because
+#      it holds the API secret, so it is NOT present in the public repo).
+#   2. Overlay ../clash-config.json on top when it exists (hand-edited override).
+#
+# Auto-detection sources:
+#   ApiSecret / MixedPort / ApiBase  <- %USERPROFILE%\.config\clash\config.yaml
+#                                       (written by Clash itself on every launch)
+#   GuiExe                           <- running process, then the uninstall
+#                                       registry entry, then common paths
 # ============================================================================
-$cfgPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'clash-config.json'
-if (-not (Test-Path $cfgPath)) {
-    throw "Config not found: $cfgPath"
+function Find-GuiExe {
+    $proc = Get-Process -Name 'Clash for Windows' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($proc -and $proc.Path) { return $proc.Path }
+    $keys = @(
+        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    $entry = Get-ItemProperty $keys -ErrorAction SilentlyContinue |
+             Where-Object { $_.DisplayName -like '*Clash*' -and $_.InstallLocation } |
+             Select-Object -First 1
+    if ($entry) {
+        $cand = Join-Path $entry.InstallLocation 'Clash for Windows.exe'
+        if (Test-Path $cand) { return $cand }
+    }
+    foreach ($root in @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+        if (-not $root) { continue }
+        $cand = Join-Path $root 'Clash for Windows\Clash for Windows.exe'
+        if (Test-Path $cand) { return $cand }
+    }
+    return ''
 }
-$raw = Get-Content -Path $cfgPath -Raw -Encoding UTF8
-$script:Cfg = $raw | ConvertFrom-Json
+
+function New-DefaultConfig {
+    $c = [PSCustomObject]@{
+        GuiExe      = ''
+        GuiProcess  = 'Clash for Windows'
+        CoreProcess = 'clash-win64'
+        MixedPort   = 7890
+        ApiBase     = 'http://127.0.0.1:9090'
+        ApiSecret   = ''
+        MarkerFile  = '%USERPROFILE%\.config\clash\.agent-opened'
+        DefaultUrl  = 'https://github.com'
+    }
+    $yaml = Join-Path $env:USERPROFILE '.config\clash\config.yaml'
+    if (Test-Path $yaml) {
+        foreach ($line in (Get-Content -Path $yaml -Encoding UTF8 -ErrorAction SilentlyContinue)) {
+            $t = $line.Trim()
+            if     ($t -match '^mixed-port:\s*(\d+)')            { $c.MixedPort = [int]$matches[1] }
+            elseif ($t -match '^external-controller:\s*(\S+)')   { $c.ApiBase   = "http://$($matches[1])" }
+            elseif ($t -match '^secret:\s*(\S+)')                { $c.ApiSecret = $matches[1] }
+        }
+    }
+    $c.GuiExe = Find-GuiExe
+    return $c
+}
+
+$cfgPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'clash-config.json'
+$script:Cfg = New-DefaultConfig
+$script:ConfigSource = 'auto-detected'
+if (Test-Path $cfgPath) {
+    # Read as UTF-8: PS5.1 would otherwise decode non-ASCII paths as ANSI/GBK.
+    # Only non-empty values override auto-detection, so a half-filled file is
+    # harmless. Unknown keys (e.g. "_comment") are skipped instead of throwing.
+    try {
+        $raw  = Get-Content -Path $cfgPath -Raw -Encoding UTF8
+        $user = $raw | ConvertFrom-Json
+        $known = @($script:Cfg.PSObject.Properties.Name)
+        foreach ($p in $user.PSObject.Properties) {
+            if ($null -eq $p.Value) { continue }
+            if ("$($p.Value)".Trim() -eq '') { continue }
+            if ($known -contains $p.Name) { $script:Cfg.($p.Name) = $p.Value }
+        }
+        $script:ConfigSource = 'clash-config.json'
+    } catch {
+        $script:ConfigSource = 'auto-detected (clash-config.json unreadable)'
+    }
+}
 
 # Expand %USERPROFILE% style tokens in MarkerFile
 $script:Cfg.MarkerFile = [Environment]::ExpandEnvironmentVariables($script:Cfg.MarkerFile)
@@ -415,6 +486,8 @@ function Get-Status {
     [PSCustomObject]@{
         core_running     = $core
         api_reachable    = $api
+        config_source    = $script:ConfigSource
+        gui_exe          = $script:Cfg.GuiExe
         api_source       = $script:RuntimeSource
         api_base         = $script:Cfg.ApiBase
         mixed_port       = [int]$script:Cfg.MixedPort
@@ -471,7 +544,9 @@ function Start-Clash {
     $hasGui = [bool](Get-Process -Name $script:Cfg.GuiProcess -ErrorAction SilentlyContinue)
     if (-not $hasGui) {
         if (-not (Test-Path $script:Cfg.GuiExe)) {
-            throw "Clash executable not found: $($script:Cfg.GuiExe)"
+            throw ("Clash executable not found (auto-detect failed, no clash-config.json). " +
+                   "Set GuiExe in clash-config.json next to SKILL.md. " +
+                   "Looked for: running process, uninstall registry, LOCALAPPDATA/Program Files.")
         }
         # Start-Process cannot launch this Electron GUI from a non-interactive /
         # sandboxed session: the process dies immediately. Routing through
