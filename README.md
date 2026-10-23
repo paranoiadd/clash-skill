@@ -24,27 +24,37 @@ AI 助手帮你 `git clone`、`pip install`、拉模型权重时，经常卡死�
 
 ## 快速开始
 
-**1. 前置要求**
+**前置要求**
 
 - Windows + PowerShell 5.1+
-- [Clash for Windows](https://github.com/Fndroid/clash_for_windows_pkg)，且已导入订阅
+- [Clash for Windows](https://github.com/Fndroid/clash_for_windows_pkg)，已导入订阅
 - 订阅需**带分流规则**（`GEOIP,CN,DIRECT` + `MATCH,节点`），否则 `rule` 模式无意义
 
-**2. 配置**
+**一行安装**
 
 ```bash
-cp clash-config.example.json clash-config.json
+npx github:paranoiadd/clash-skill
 ```
 
-填入你的 `GuiExe`（Clash 安装路径）和 `ApiSecret`。
-secret 在 `~/.config/clash/config.yaml` 的 `secret:` 字段。注意**控制端口每次启动都会变**，脚本会自动重读该文件，不用你管。
-
-**3. 放进 skill 目录**
+安装器会自动探测本机 Clash（可执行路径、混合端口、API secret），生成 `clash-config.json`，
+并装进检测到的 skills 目录（`~/.workbuddy/skills`、`~/.claude/skills`）。
 
 ```bash
-cp -r . ~/.workbuddy/skills/clash/     # WorkBuddy
-# 或 ~/.claude/skills/clash/           # Claude Code
+npx github:paranoiadd/clash-skill --dir ~/.workbuddy/skills   # 指定目录
+npx github:paranoiadd/clash-skill --force                     # 覆盖已有配置
 ```
+
+**手动安装**（没有 node 时）
+
+```bash
+git clone https://github.com/paranoiadd/clash-skill
+cp -r clash-skill ~/.workbuddy/skills/clash
+cd ~/.workbuddy/skills/clash
+cp clash-config.example.json clash-config.json   # 填入 GuiExe 与 ApiSecret
+```
+
+secret 在 `~/.config/clash/config.yaml` 的 `secret:` 字段。控制端口每次启动都会变，
+但脚本会自动重读该文件，不用你管。
 
 ## 命令
 

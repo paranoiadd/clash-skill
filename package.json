@@ -1,0 +1,38 @@
+{
+  "name": "clash-skill",
+  "version": "2.1.0",
+  "description": "Clash for Windows skill for AI assistants: route only the traffic that needs a proxy, keep domestic traffic direct.",
+  "bin": {
+    "clash-skill": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "SKILL.md",
+    "clash-config.example.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "clash",
+    "proxy",
+    "ai-agent",
+    "skill",
+    "windows",
+    "claude",
+    "workbuddy"
+  ],
+  "author": "paranoiadd",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paranoiadd/clash-skill.git"
+  },
+  "homepage": "https://github.com/paranoiadd/clash-skill#readme",
+  "bugs": {
+    "url": "https://github.com/paranoiadd/clash-skill/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
