@@ -2,10 +2,7 @@
 
 > 给你的 AI 助手一套可控的 Clash 代理能力：**访问国外资源时自动用上节点，国内流量保持直连。**
 
-![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
-![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Clash](https://img.shields.io/badge/Clash-for%20Windows-4B5563)
-![License](https://img.shields.io/badge/license-MIT-2ea44f)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white) ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white) ![Clash](https://img.shields.io/badge/Clash-for%20Windows-4B5563) ![License](https://img.shields.io/badge/license-MIT-2ea44f)
 
 ## 解决什么问题
 
