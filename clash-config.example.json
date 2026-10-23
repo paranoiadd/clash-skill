@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy this file to clash-config.json and fill in your own values. clash-config.json is gitignored because it holds your API secret.",
+  "_comment_2": "GuiExe supports non-ASCII paths; the script reads this file as UTF-8.",
+  "GuiExe": "C:\\Program Files\\Clash for Windows\\Clash for Windows.exe",
+  "GuiProcess": "Clash for Windows",
+  "CoreProcess": "clash-win64",
+  "MixedPort": 7890,
+  "ApiBase": "http://127.0.0.1:9090",
+  "ApiSecret": "",
+  "MarkerFile": "%USERPROFILE%\\.config\\clash\\.agent-opened",
+  "DefaultUrl": "https://github.com"
+}

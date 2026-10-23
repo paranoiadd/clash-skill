@@ -1,0 +1,6 @@
+# Local config holds your Clash API secret — never commit it
+clash-config.json
+
+# Runtime state written by the script
+.config/
+*.log
