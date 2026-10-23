@@ -182,7 +182,11 @@ function Invoke-ClashApi {
             $json = '{}'
             if ($null -ne $Body) { $json = ($Body | ConvertTo-Json -Compress) }
             $content = New-Object System.Net.Http.StringContent($json, [System.Text.Encoding]::UTF8, 'application/json')
-            $req = New-Object System.Net.Http.HttpRequestMessage([System.Net.Http.HttpMethod]::Patch, $uri)
+            # NOTE: [System.Net.Http.HttpMethod]::Patch resolves to $null on this
+            # box's System.Net.Http, so the ctor throws "参数名: method". Build the
+            # method from its string ctor instead - that always works.
+            $pm = [System.Net.Http.HttpMethod]::new('PATCH')
+            $req = [System.Net.Http.HttpRequestMessage]::new($pm, [uri]$uri)
             $req.Content = $content
             $resp = $client.SendAsync($req).GetAwaiter().GetResult()
         } else {
@@ -426,6 +430,35 @@ function Get-Status {
     }
 }
 
+function Assert-RuleMode {
+    param([int]$Seconds = 15, [int]$MinWatch = 5)
+    # The CfW GUI keeps its own persisted mode (often 'global') and writes it
+    # back a few seconds AFTER the API first answers. Setting mode once right
+    # after Wait-ApiReady therefore loses the race: 'start' claimed rule, then
+    # the GUI flipped it back to global and every CN site got dragged abroad.
+    # Re-assert rule until it has stayed put for two consecutive checks and we
+    # have watched long enough to be past the GUI's restore window.
+    $start = Get-Date
+    $deadline = $start.AddSeconds($Seconds)
+    $stable = 0
+    $last = ''
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $last = (Invoke-ClashApi -Path '/configs').mode
+            if ($last -ne 'rule') {
+                Invoke-ClashApi -Path '/configs' -Method Patch -Body @{ mode = 'rule' } | Out-Null
+                $last = 'rule'
+                $stable = 0
+            } else {
+                $stable++
+                if (($stable -ge 2) -and (((Get-Date) - $start).TotalSeconds -ge $MinWatch)) { break }
+            }
+        } catch { }
+        Start-Sleep -Milliseconds 1200
+    }
+    return $last
+}
+
 function Start-Clash {
     if ((Test-CoreRunning) -and (Test-ApiAlive)) {
         return [PSCustomObject]@{
@@ -452,13 +485,7 @@ function Start-Clash {
         # Split routing is the whole point of this skill: force rule mode so
         # domestic traffic keeps going direct instead of being dragged through
         # an overseas node (global mode does exactly that and slows CN sites).
-        try {
-            $modeNow = (Invoke-ClashApi -Path '/configs').mode
-            if ($modeNow -ne 'rule') {
-                Invoke-ClashApi -Path '/configs' -Method Patch -Body @{ mode = 'rule' } | Out-Null
-                $modeNow = 'rule'
-            }
-        } catch { }
+        $modeNow = Assert-RuleMode
         $dir = Split-Path $script:Cfg.MarkerFile
         if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
         (Get-Date).ToString('s') | Set-Content -Path $script:Cfg.MarkerFile -Encoding UTF8
